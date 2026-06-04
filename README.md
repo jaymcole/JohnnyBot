@@ -27,8 +27,12 @@ cd YOUR_REPO
 pip3 install -r requirements.txt
 
 # 3. Configure environment
-cp .env.example .env
-nano .env  # Fill in all values
+#    Secrets (token, server/user IDs) go in .env.secrets;
+#    non-sensitive settings go in .env.configs. Both are gitignored.
+cp .env.secrets.example .env.secrets
+cp .env.configs.example .env.configs
+nano .env.secrets   # Fill in DISCORD_TOKEN, DISCORD_GUILD_ID, ALLOWED_USER_IDS
+nano .env.configs   # Fill in the TELEGRAM_* values
 
 # 4. Make the watchdog executable
 chmod +x run_bot.sh

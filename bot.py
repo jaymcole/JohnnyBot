@@ -16,7 +16,11 @@ from dotenv import load_dotenv
 
 # --- Configuration -----------------------------------------------------------
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Secrets (token, server/user IDs) live in .env.secrets; non-sensitive,
+# environment-specific settings live in .env.configs. Both are gitignored.
+load_dotenv(os.path.join(BASE_DIR, ".env.secrets"))
+load_dotenv(os.path.join(BASE_DIR, ".env.configs"))
 
 DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
 DISCORD_GUILD_ID = int(os.environ["DISCORD_GUILD_ID"])
