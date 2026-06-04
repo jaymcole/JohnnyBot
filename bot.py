@@ -35,6 +35,8 @@ HELP_TEXT = (
     "/query <title> — Search and add a movie\n"
     "/library [query] — Search your library\n"
     "/upcoming [days] — Upcoming releases (default: 30)\n"
+    "/auth <password> — Authenticate with the bot\n"
+    "/myid — Show your Telegram user ID\n"
     "/clear — Cancel current operation\n\n"
     "Admin only:\n"
     "/rss — Trigger RSS sync\n"
@@ -83,6 +85,10 @@ async def auth_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("Incorrect password.")
 
 
+async def myid_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(f"Your Telegram user ID is: {update.effective_user.id}")
+
+
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data.clear()
     await update.message.reply_text("Nothing in progress.")
@@ -116,6 +122,7 @@ def main() -> None:
 
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("myid", myid_command))
     app.add_handler(CommandHandler("auth", auth_command))
     app.add_handler(CommandHandler("clear", clear_command))
     app.add_handler(CommandHandler("library", library_command))
