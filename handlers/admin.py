@@ -24,6 +24,10 @@ UNREVOKE_SELECT, UNREVOKE_CONFIRM = 0, 1
 # Repo root is one level above this file (handlers/).
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# SIGTERM is the clean shutdown signal on Linux. Windows only supports SIGINT
+# via os.kill, which python-telegram-bot handles identically.
+_SHUTDOWN_SIGNAL = signal.SIGINT if sys.platform == "win32" else signal.SIGTERM
+
 
 def _radarr(context: ContextTypes.DEFAULT_TYPE) -> RadarrClient:
     return RadarrClient(context.application.bot_data["config"])
@@ -101,7 +105,7 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.message.reply_text("Admin only.")
         return
     await update.message.reply_text("Restarting...")
-    os.kill(os.getpid(), signal.SIGTERM)
+    os.kill(os.getpid(), _SHUTDOWN_SIGNAL)
 
 
 async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -137,7 +141,7 @@ async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     pull_msg = stdout.decode().strip()
     await update.message.reply_text(f"Updated ({pull_msg}), restarting...")
-    os.kill(os.getpid(), signal.SIGTERM)
+    os.kill(os.getpid(), _SHUTDOWN_SIGNAL)
 
 
 # --- Revoke conversation -------------------------------------------------------
