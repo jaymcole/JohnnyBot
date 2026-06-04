@@ -1,1 +1,2 @@
-discord.py>=2.3.0
+python-telegram-bot>=20.0
+httpx>=0.24.0
