@@ -26,11 +26,11 @@ cd YOUR_REPO
 # 2. Install Python dependencies
 pip3 install -r requirements.txt
 
-# 3. Configure secrets
-#    configs.json is committed to the repo and pre-filled, so you only need
-#    to supply your own secrets (token, server/user IDs) in secrets.json.
-cp secrets.json.example secrets.json
-nano secrets.json   # Fill in DISCORD_TOKEN, DISCORD_GUILD_ID, ALLOWED_USER_IDS
+# 3. Configure environment
+#    env.json holds all config and is gitignored, so local edits never
+#    conflict with future git pulls.
+cp env.json.example env.json
+nano env.json   # Fill in all values
 
 # 4. Make the watchdog executable
 chmod +x run_bot.sh

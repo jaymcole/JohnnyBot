@@ -24,17 +24,16 @@ def load_json(filename):
         return json.load(f)
 
 
-# Secrets (token, server/user IDs) live in secrets.json (gitignored);
-# non-sensitive, environment-specific settings live in configs.json (committed).
-secrets = load_json("secrets.json")
-configs = load_json("configs.json")
+# All configuration (secrets and settings) lives in env.json, which is
+# gitignored. Copy env.json.example to env.json and fill in the values.
+env = load_json("env.json")
 
-DISCORD_TOKEN = secrets["DISCORD_TOKEN"]
-DISCORD_GUILD_ID = int(secrets["DISCORD_GUILD_ID"])
-ALLOWED_USER_IDS = [int(uid) for uid in secrets["ALLOWED_USER_IDS"]]
-TELEGRAM_BOT_DIR = configs["TELEGRAM_BOT_DIR"]
-TELEGRAM_BOT_COMMAND = configs["TELEGRAM_BOT_COMMAND"]
-TELEGRAM_PID_FILE = configs["TELEGRAM_PID_FILE"]
+DISCORD_TOKEN = env["DISCORD_TOKEN"]
+DISCORD_GUILD_ID = int(env["DISCORD_GUILD_ID"])
+ALLOWED_USER_IDS = [int(uid) for uid in env["ALLOWED_USER_IDS"]]
+TELEGRAM_BOT_DIR = env["TELEGRAM_BOT_DIR"]
+TELEGRAM_BOT_COMMAND = env["TELEGRAM_BOT_COMMAND"]
+TELEGRAM_PID_FILE = env["TELEGRAM_PID_FILE"]
 
 GUILD = discord.Object(id=DISCORD_GUILD_ID)
 
