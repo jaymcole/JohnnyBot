@@ -17,7 +17,7 @@ def load_config() -> dict:
         print(f"ERROR: env.json is malformed: {e}")
         sys.exit(1)
 
-    required = ["TELEGRAM_BOT_TOKEN", "BOT_PASSWORD", "OWNER_ID", "RADARR_HOST", "RADARR_API_KEY"]
+    required = ["TELEGRAM_BOT_TOKEN", "BOT_PASSWORD", "RADARR_HOST", "RADARR_API_KEY"]
     missing = [k for k in required if not cfg.get(k)]
     if missing:
         print(f"ERROR: Missing required config keys: {', '.join(missing)}")
@@ -31,15 +31,26 @@ def load_config() -> dict:
     cfg.setdefault("NOTIFY_CHAT_ID", None)
     cfg.setdefault("DISCORD_WEBHOOK_URL", "")
 
-    # Telegram user IDs and ports are compared against ints elsewhere, so coerce
-    # them here. JSON lets users quote these by accident, which would silently
-    # lock the owner out of every admin command (str != int).
-    for key in ("OWNER_ID", "MAX_RESULTS", "RADARR_PORT"):
+    for key in ("MAX_RESULTS", "RADARR_PORT"):
         try:
             cfg[key] = int(cfg[key])
         except (TypeError, ValueError):
             print(f"ERROR: config key {key} must be an integer, got: {cfg[key]!r}")
             sys.exit(1)
+
+    # OWNER_IDS must be a non-empty list of ints. Accept a bare int for
+    # convenience so someone can write "OWNER_IDS": 123 instead of [123].
+    raw_ids = cfg.get("OWNER_IDS")
+    if isinstance(raw_ids, int):
+        raw_ids = [raw_ids]
+    if not raw_ids:
+        print("ERROR: OWNER_IDS must be a non-empty list of Telegram user IDs.")
+        sys.exit(1)
+    try:
+        cfg["OWNER_IDS"] = [int(uid) for uid in raw_ids]
+    except (TypeError, ValueError):
+        print(f"ERROR: All OWNER_IDS must be integers, got: {raw_ids!r}")
+        sys.exit(1)
 
     # NOTIFY_CHAT_ID is optional; coerce only if the user set it.
     if cfg["NOTIFY_CHAT_ID"]:

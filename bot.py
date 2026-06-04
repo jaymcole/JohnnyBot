@@ -74,7 +74,7 @@ async def auth_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("Your access has been revoked.")
         return
 
-    if acl_store.is_authorized(user_id) or user_id == config["OWNER_ID"]:
+    if acl_store.is_authorized(user_id) or user_id in config["OWNER_IDS"]:
         await update.message.reply_text("You are already authorized.")
         return
 

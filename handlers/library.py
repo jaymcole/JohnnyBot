@@ -15,7 +15,7 @@ def _radarr(context: ContextTypes.DEFAULT_TYPE) -> RadarrClient:
 
 
 def _authorized(user_id: int, config: dict) -> bool:
-    return acl_store.is_authorized(user_id) or user_id == config["OWNER_ID"]
+    return acl_store.is_authorized(user_id) or user_id in config["OWNER_IDS"]
 
 
 async def library_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

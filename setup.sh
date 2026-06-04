@@ -67,11 +67,11 @@ else
     [ -z "$RADARR_API_KEY" ] && { err "Radarr API key is required."; exit 1; }
 
     echo ""
-    echo "Your OWNER_ID is your numeric Telegram user ID — not your username."
-    echo "If you don't know it yet, leave this as 0. Start the bot, send /myid,"
-    echo "then update env.json and send /restart."
-    read -rp "Owner Telegram user ID [0]: " OWNER_ID
-    OWNER_ID="${OWNER_ID:-0}"
+    echo "OWNER_IDS: numeric Telegram user IDs with admin access (comma-separated)."
+    echo "If you don't know yours yet, leave this as 0. Start the bot, send /myid,"
+    echo "then update OWNER_IDS in env.json and send /restart."
+    read -rp "Owner Telegram user ID(s) [0]: " OWNER_IDS_RAW
+    OWNER_IDS_RAW="${OWNER_IDS_RAW:-0}"
 
     echo ""
     read -rp "Discord webhook URL for logging (leave blank to skip): " DISCORD_WEBHOOK_URL
@@ -79,7 +79,7 @@ else
     # Write env.json via Python so special characters in passwords are safe.
     export _JB_TOKEN="$BOT_TOKEN"
     export _JB_PASSWORD="$BOT_PASSWORD"
-    export _JB_OWNER_ID="$OWNER_ID"
+    export _JB_OWNER_IDS="$OWNER_IDS_RAW"
     export _JB_RADARR_HOST="$RADARR_HOST"
     export _JB_RADARR_PORT="$RADARR_PORT"
     export _JB_RADARR_API_KEY="$RADARR_API_KEY"
@@ -89,10 +89,13 @@ else
     python3 << 'PYEOF'
 import json, os
 
+raw = os.environ["_JB_OWNER_IDS"]
+owner_ids = [int(x.strip()) for x in raw.split(",") if x.strip()]
+
 cfg = {
     "TELEGRAM_BOT_TOKEN": os.environ["_JB_TOKEN"],
     "BOT_PASSWORD":        os.environ["_JB_PASSWORD"],
-    "OWNER_ID":            int(os.environ["_JB_OWNER_ID"] or 0),
+    "OWNER_IDS":           owner_ids,
     "NOTIFY_CHAT_ID":      None,
     "DISCORD_WEBHOOK_URL": os.environ["_JB_DISCORD_WEBHOOK"],
     "MAX_RESULTS":         15,
@@ -112,7 +115,7 @@ with open(path, "w") as f:
 PYEOF
 
     # Clean up exported vars
-    unset _JB_TOKEN _JB_PASSWORD _JB_OWNER_ID _JB_RADARR_HOST \
+    unset _JB_TOKEN _JB_PASSWORD _JB_OWNER_IDS _JB_RADARR_HOST \
           _JB_RADARR_PORT _JB_RADARR_API_KEY _JB_DISCORD_WEBHOOK _JB_REPO_DIR
 
     ok "env.json written."
@@ -136,10 +139,10 @@ echo "View live logs:   tmux attach -t $SESSION"
 echo "Detach:           Ctrl+B then D"
 echo ""
 
-OWNER_ID_VAL=$(python3 -c "import json; print(json.load(open('$REPO_DIR/env.json'))['OWNER_ID'])" 2>/dev/null || echo "0")
-if [ "$OWNER_ID_VAL" = "0" ]; then
-    warn "⚠  OWNER_ID is 0. Send /myid to the bot in Telegram, paste the ID"
-    warn "   into env.json as OWNER_ID, then send /restart to the bot."
+OWNER_IDS_VAL=$(python3 -c "import json; ids=json.load(open('$REPO_DIR/env.json'))['OWNER_IDS']; print(ids)" 2>/dev/null || echo "[0]")
+if [ "$OWNER_IDS_VAL" = "[0]" ]; then
+    warn "⚠  OWNER_IDS is [0]. Send /myid to the bot in Telegram, paste the ID"
+    warn "   into env.json as OWNER_IDS (e.g. [123456789]), then send /restart."
     echo ""
 fi
 

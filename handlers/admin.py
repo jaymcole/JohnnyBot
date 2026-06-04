@@ -30,7 +30,7 @@ def _radarr(context: ContextTypes.DEFAULT_TYPE) -> RadarrClient:
 
 
 def _is_admin(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    return user_id == context.application.bot_data["config"]["OWNER_ID"]
+    return user_id in context.application.bot_data["config"]["OWNER_IDS"]
 
 
 async def rss_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
