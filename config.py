@@ -29,6 +29,7 @@ def load_config() -> dict:
     cfg.setdefault("RADARR_VERIFY_SSL", True)
     cfg.setdefault("RADARR_URL_BASE", "")
     cfg.setdefault("NOTIFY_CHAT_ID", None)
+    cfg.setdefault("DISCORD_WEBHOOK_URL", "")
 
     # Telegram user IDs and ports are compared against ints elsewhere, so coerce
     # them here. JSON lets users quote these by accident, which would silently

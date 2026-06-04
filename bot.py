@@ -9,6 +9,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 import acl as acl_store
 from config import load_config
+import discord_log
 from handlers.admin import (
     cid_command,
     refresh_command,
@@ -109,6 +110,10 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 def main() -> None:
     config = load_config()
 
+    webhook_url = config.get("DISCORD_WEBHOOK_URL", "")
+    if webhook_url:
+        logging.getLogger().addHandler(discord_log.DiscordWebhookHandler(webhook_url))
+
     app = Application.builder().token(config["TELEGRAM_BOT_TOKEN"]).build()
     app.bot_data["config"] = config
 
@@ -137,7 +142,11 @@ def main() -> None:
 
     app.add_error_handler(error_handler)
 
-    app.run_polling(drop_pending_updates=True)
+    discord_log.send(webhook_url, "🟢 JohnnyBot started")
+    try:
+        app.run_polling(drop_pending_updates=True)
+    finally:
+        discord_log.send(webhook_url, "🔴 JohnnyBot stopped — watchdog will restart")
 
 
 if __name__ == "__main__":
