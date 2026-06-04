@@ -1,12 +1,14 @@
 #!/bin/bash
 # First-time setup script for JohnnyBot.
 # Safe to re-run: skips config prompts if env.json already exists,
-# and skips the tmux launch if the session is already running.
+# and skips the launch step if the bot is already running.
 
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SESSION="johnnybot"
+SERVICE_NAME="johnnybot"
+LAUNCHED=false
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; RESET='\033[0m'
@@ -24,10 +26,6 @@ fi
 py_ok=$(python3 -c "import sys; print(sys.version_info >= (3,10))")
 if [ "$py_ok" != "True" ]; then
     err "Python 3.10+ required (found $(python3 --version))."; exit 1
-fi
-
-if ! command -v tmux &>/dev/null; then
-    err "tmux not found. Install tmux and retry."; exit 1
 fi
 
 if ! command -v git &>/dev/null; then
@@ -123,20 +121,77 @@ fi
 
 # ── Launch ────────────────────────────────────────────────────────────────────
 echo ""
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-    warn "tmux session '$SESSION' is already running."
-    warn "To restart: tmux kill-session -t $SESSION && $REPO_DIR/run_bot.sh"
-else
-    tmux new-session -d -s "$SESSION" "$REPO_DIR/run_bot.sh"
-    ok "Bot started in tmux session '$SESSION'."
+
+# Prefer systemd on Linux — it handles boot startup automatically.
+if [ "$(uname -s)" = "Linux" ] && command -v systemctl &>/dev/null; then
+    if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+        warn "Systemd service '$SERVICE_NAME' is already running."
+        LAUNCHED=true
+    else
+        read -rp "Install systemd service for automatic start on boot? [Y/n]: " USE_SYSTEMD
+        USE_SYSTEMD="${USE_SYSTEMD:-y}"
+        if [[ "$USE_SYSTEMD" =~ ^[Yy]$ ]]; then
+            cat > /tmp/johnnybot.service << EOF
+[Unit]
+Description=JohnnyBot Telegram Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$(whoami)
+WorkingDirectory=$REPO_DIR
+ExecStart=$REPO_DIR/run_bot.sh
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+            sudo cp /tmp/johnnybot.service /etc/systemd/system/johnnybot.service
+            rm /tmp/johnnybot.service
+            sudo systemctl daemon-reload
+            sudo systemctl enable "$SERVICE_NAME"
+            sudo systemctl start "$SERVICE_NAME"
+            ok "Systemd service installed, enabled, and started."
+            ok "Bot will now start automatically on every boot."
+            LAUNCHED=true
+        fi
+    fi
+fi
+
+# Fall back to tmux if systemd was skipped or unavailable.
+if [ "$LAUNCHED" = false ]; then
+    if ! command -v tmux &>/dev/null; then
+        err "tmux not found. Install tmux and retry, or choose systemd above."; exit 1
+    fi
+    if tmux has-session -t "$SESSION" 2>/dev/null; then
+        warn "tmux session '$SESSION' is already running."
+        warn "To restart: tmux kill-session -t $SESSION && $REPO_DIR/run_bot.sh"
+    else
+        tmux new-session -d -s "$SESSION" "$REPO_DIR/run_bot.sh"
+        ok "Bot started in tmux session '$SESSION'."
+        warn "Note: tmux session will not survive a server reboot."
+        warn "Re-run setup and choose the systemd option to fix this."
+    fi
+    LAUNCHED=true
 fi
 
 # ── Next steps ────────────────────────────────────────────────────────────────
 echo ""
 echo "=== Done ==="
 echo ""
-echo "View live logs:   tmux attach -t $SESSION"
-echo "Detach:           Ctrl+B then D"
+
+if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+    echo "Bot status:     sudo systemctl status $SERVICE_NAME"
+    echo "Live logs:      sudo journalctl -u $SERVICE_NAME -f"
+    echo "Stop/start:     sudo systemctl stop/start $SERVICE_NAME"
+else
+    echo "View live logs: tmux attach -t $SESSION"
+    echo "Detach:         Ctrl+B then D"
+fi
 echo ""
 
 OWNER_IDS_VAL=$(python3 -c "import json; ids=json.load(open('$REPO_DIR/env.json'))['OWNER_IDS']; print(ids)" 2>/dev/null || echo "[0]")

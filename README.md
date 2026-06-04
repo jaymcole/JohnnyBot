@@ -126,6 +126,29 @@ If you installed dependencies in a virtualenv, edit the shebang at the top of
 `notify.py` to point at that interpreter, since Radarr runs scripts with the
 system `python3`.
 
+## Auto-start on boot
+
+`setup.sh` will offer to install a systemd service during setup (recommended).
+This starts the bot automatically on every boot with no manual intervention.
+
+To install it manually after setup:
+
+```bash
+sudo ./setup.sh   # choose Y when asked about systemd
+```
+
+Or manage the service directly:
+
+```bash
+sudo systemctl status johnnybot    # check if running
+sudo systemctl start johnnybot     # start
+sudo systemctl stop johnnybot      # stop
+sudo journalctl -u johnnybot -f    # stream logs
+```
+
+If you chose tmux instead of systemd, you will need to restart manually after
+a reboot — re-run `setup.sh` and choose the systemd option to fix this.
+
 ## Updating
 
 `run_bot.sh` pulls the latest code on every restart, so to update you can just
@@ -134,10 +157,8 @@ never conflict with your local settings.
 
 ## Attaching to the bot's tmux session (for debugging)
 
+Only relevant if you chose tmux instead of systemd during setup:
+
 ```bash
 tmux attach -t johnnybot
 ```
-
-## Reattaching after a server reboot
-
-After a reboot the tmux session is gone. Re-run step 5 from the setup above.
