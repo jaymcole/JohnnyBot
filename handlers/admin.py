@@ -1,4 +1,8 @@
+import asyncio
 import logging
+import os
+import signal
+import sys
 
 from telegram import Update
 from telegram.ext import (
@@ -16,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 REVOKE_SELECT, REVOKE_CONFIRM = 0, 1
 UNREVOKE_SELECT, UNREVOKE_CONFIRM = 0, 1
+
+# Repo root is one level above this file (handlers/).
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _radarr(context: ContextTypes.DEFAULT_TYPE) -> RadarrClient:
@@ -85,6 +92,52 @@ async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         lines.append("No users registered.")
 
     await update.message.reply_text("\n".join(lines))
+
+
+# --- Restart / update ----------------------------------------------------------
+
+async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not _is_admin(update.effective_user.id, context):
+        await update.message.reply_text("Admin only.")
+        return
+    await update.message.reply_text("Restarting...")
+    os.kill(os.getpid(), signal.SIGTERM)
+
+
+async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not _is_admin(update.effective_user.id, context):
+        await update.message.reply_text("Admin only.")
+        return
+
+    pull = await asyncio.create_subprocess_exec(
+        "git", "pull", "origin", "main",
+        cwd=REPO_DIR,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await pull.communicate()
+
+    if pull.returncode != 0:
+        output = (stderr or stdout).decode().strip()
+        await update.message.reply_text(f"git pull failed:\n{output}")
+        return
+
+    check = await asyncio.create_subprocess_exec(
+        sys.executable, "-m", "py_compile", os.path.join(REPO_DIR, "bot.py"),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, check_err = await check.communicate()
+
+    if check.returncode != 0:
+        await update.message.reply_text(
+            f"Syntax check failed — not restarting:\n{check_err.decode().strip()}"
+        )
+        return
+
+    pull_msg = stdout.decode().strip()
+    await update.message.reply_text(f"Updated ({pull_msg}), restarting...")
+    os.kill(os.getpid(), signal.SIGTERM)
 
 
 # --- Revoke conversation -------------------------------------------------------

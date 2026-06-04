@@ -12,9 +12,11 @@ from config import load_config
 from handlers.admin import (
     cid_command,
     refresh_command,
+    restart_command,
     revoke_conversation,
     rss_command,
     unrevoke_conversation,
+    update_command,
     users_command,
     wanted_command,
 )
@@ -41,7 +43,9 @@ HELP_TEXT = (
     "/cid — Show chat ID\n"
     "/users — List authorized users\n"
     "/revoke — Revoke a user\n"
-    "/unrevoke — Restore a user"
+    "/unrevoke — Restore a user\n"
+    "/restart — Restart the bot\n"
+    "/update — Pull latest code and restart"
 )
 
 
@@ -121,6 +125,8 @@ def main() -> None:
     app.add_handler(CommandHandler("refresh", refresh_command))
     app.add_handler(CommandHandler("cid", cid_command))
     app.add_handler(CommandHandler("users", users_command))
+    app.add_handler(CommandHandler("restart", restart_command))
+    app.add_handler(CommandHandler("update", update_command))
 
     app.add_error_handler(error_handler)
 
