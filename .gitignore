@@ -1,6 +1,5 @@
 .env
 .env.secrets
-.env.configs
 *.pid
 __pycache__/
 *.pyc

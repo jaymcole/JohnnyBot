@@ -26,13 +26,11 @@ cd YOUR_REPO
 # 2. Install Python dependencies
 pip3 install -r requirements.txt
 
-# 3. Configure environment
-#    Secrets (token, server/user IDs) go in .env.secrets;
-#    non-sensitive settings go in .env.configs. Both are gitignored.
+# 3. Configure secrets
+#    .env.configs is committed to the repo and pre-filled, so you only need
+#    to supply your own secrets (token, server/user IDs) in .env.secrets.
 cp .env.secrets.example .env.secrets
-cp .env.configs.example .env.configs
 nano .env.secrets   # Fill in DISCORD_TOKEN, DISCORD_GUILD_ID, ALLOWED_USER_IDS
-nano .env.configs   # Fill in the TELEGRAM_* values
 
 # 4. Make the watchdog executable
 chmod +x run_bot.sh
