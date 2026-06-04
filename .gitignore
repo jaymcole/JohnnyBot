@@ -1,5 +1,4 @@
-.env
-.env.secrets
+secrets.json
 *.pid
 __pycache__/
 *.pyc

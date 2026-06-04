@@ -27,10 +27,10 @@ cd YOUR_REPO
 pip3 install -r requirements.txt
 
 # 3. Configure secrets
-#    .env.configs is committed to the repo and pre-filled, so you only need
-#    to supply your own secrets (token, server/user IDs) in .env.secrets.
-cp .env.secrets.example .env.secrets
-nano .env.secrets   # Fill in DISCORD_TOKEN, DISCORD_GUILD_ID, ALLOWED_USER_IDS
+#    configs.json is committed to the repo and pre-filled, so you only need
+#    to supply your own secrets (token, server/user IDs) in secrets.json.
+cp secrets.json.example secrets.json
+nano secrets.json   # Fill in DISCORD_TOKEN, DISCORD_GUILD_ID, ALLOWED_USER_IDS
 
 # 4. Make the watchdog executable
 chmod +x run_bot.sh
@@ -47,7 +47,7 @@ tmux send-keys -t discord-bot "./run_bot.sh" Enter
 
 - **DISCORD_TOKEN** — Create a bot at <https://discord.com/developers/applications>, go to Bot > Token
 - **DISCORD_GUILD_ID** — In Discord, enable Developer Mode (Settings > Advanced), then right-click your server and click "Copy Server ID"
-- **ALLOWED_USER_IDS** — Right-click a user in Discord and click "Copy User ID". Comma-separate multiple IDs.
+- **ALLOWED_USER_IDS** — Right-click a user in Discord and click "Copy User ID". Provide as a JSON array, e.g. `[123456789, 987654321]`.
 - **TELEGRAM_BOT_DIR** — Absolute path to the `telegram-radarr-bot` directory on the server
 - **TELEGRAM_BOT_COMMAND** — `node radarr.js`
 - **TELEGRAM_PID_FILE** — Recommended: `/tmp/telegram_bot.pid`

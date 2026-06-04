@@ -5,6 +5,7 @@ Exposes two guild-scoped slash commands:
   /update-self       - pull the latest code and restart via the watchdog
 """
 
+import json
 import os
 import signal
 import subprocess
@@ -12,26 +13,28 @@ import time
 
 import discord
 from discord import app_commands
-from dotenv import load_dotenv
 
 # --- Configuration -----------------------------------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Secrets (token, server/user IDs) live in .env.secrets; non-sensitive,
-# environment-specific settings live in .env.configs. Both are gitignored.
-load_dotenv(os.path.join(BASE_DIR, ".env.secrets"))
-load_dotenv(os.path.join(BASE_DIR, ".env.configs"))
 
-DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
-DISCORD_GUILD_ID = int(os.environ["DISCORD_GUILD_ID"])
-ALLOWED_USER_IDS = [
-    int(uid.strip())
-    for uid in os.environ["ALLOWED_USER_IDS"].split(",")
-    if uid.strip()
-]
-TELEGRAM_BOT_DIR = os.environ["TELEGRAM_BOT_DIR"]
-TELEGRAM_BOT_COMMAND = os.environ["TELEGRAM_BOT_COMMAND"]
-TELEGRAM_PID_FILE = os.environ["TELEGRAM_PID_FILE"]
+
+def load_json(filename):
+    with open(os.path.join(BASE_DIR, filename)) as f:
+        return json.load(f)
+
+
+# Secrets (token, server/user IDs) live in secrets.json (gitignored);
+# non-sensitive, environment-specific settings live in configs.json (committed).
+secrets = load_json("secrets.json")
+configs = load_json("configs.json")
+
+DISCORD_TOKEN = secrets["DISCORD_TOKEN"]
+DISCORD_GUILD_ID = int(secrets["DISCORD_GUILD_ID"])
+ALLOWED_USER_IDS = [int(uid) for uid in secrets["ALLOWED_USER_IDS"]]
+TELEGRAM_BOT_DIR = configs["TELEGRAM_BOT_DIR"]
+TELEGRAM_BOT_COMMAND = configs["TELEGRAM_BOT_COMMAND"]
+TELEGRAM_PID_FILE = configs["TELEGRAM_PID_FILE"]
 
 GUILD = discord.Object(id=DISCORD_GUILD_ID)
 
