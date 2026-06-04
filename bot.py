@@ -1,6 +1,7 @@
 """JohnnyBot — Telegram bot for Radarr movie management."""
 
 import logging
+import os
 import sys
 
 from telegram import Update
@@ -10,6 +11,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 import acl as acl_store
 from config import load_config
 import discord_log
+
+REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 from handlers.admin import (
     cid_command,
     refresh_command,
@@ -142,7 +145,14 @@ def main() -> None:
 
     app.add_error_handler(error_handler)
 
-    discord_log.send(webhook_url, "🟢 JohnnyBot started")
+    try:
+        import subprocess
+        commit = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=REPO_DIR, text=True
+        ).strip()
+    except Exception:
+        commit = "unknown"
+    discord_log.send(webhook_url, f"🟢 JohnnyBot started (commit `{commit}`)")
     try:
         app.run_polling(drop_pending_updates=True)
     finally:
