@@ -28,6 +28,7 @@ def load_config() -> dict:
     cfg.setdefault("RADARR_SSL", False)
     cfg.setdefault("RADARR_VERIFY_SSL", True)
     cfg.setdefault("RADARR_URL_BASE", "")
+    cfg.setdefault("NOTIFY_CHAT_ID", None)
 
     # Telegram user IDs and ports are compared against ints elsewhere, so coerce
     # them here. JSON lets users quote these by accident, which would silently
@@ -37,6 +38,14 @@ def load_config() -> dict:
             cfg[key] = int(cfg[key])
         except (TypeError, ValueError):
             print(f"ERROR: config key {key} must be an integer, got: {cfg[key]!r}")
+            sys.exit(1)
+
+    # NOTIFY_CHAT_ID is optional; coerce only if the user set it.
+    if cfg["NOTIFY_CHAT_ID"]:
+        try:
+            cfg["NOTIFY_CHAT_ID"] = int(cfg["NOTIFY_CHAT_ID"])
+        except (TypeError, ValueError):
+            print(f"ERROR: NOTIFY_CHAT_ID must be an integer, got: {cfg['NOTIFY_CHAT_ID']!r}")
             sys.exit(1)
 
     return cfg
