@@ -18,13 +18,16 @@ class RadarrClient:
         prefix = f"/{base}" if base else ""
         self._base_url = f"{scheme}://{host}:{port}{prefix}/api/v3"
         self._headers = {"X-Api-Key": config["RADARR_API_KEY"]}
+        # Self-hosted Radarr often sits behind a self-signed cert; allow opting
+        # out of verification rather than failing every call.
+        self._verify = config.get("RADARR_VERIFY_SSL", True)
         self._auth = None
         if config.get("RADARR_USERNAME") and config.get("RADARR_PASSWORD"):
             self._auth = (config["RADARR_USERNAME"], config["RADARR_PASSWORD"])
 
     async def _get(self, path: str, params: dict = None) -> list | dict:
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT, auth=self._auth) as client:
+            async with httpx.AsyncClient(timeout=TIMEOUT, auth=self._auth, verify=self._verify) as client:
                 r = await client.get(
                     f"{self._base_url}{path}",
                     headers=self._headers,
@@ -39,7 +42,7 @@ class RadarrClient:
 
     async def _post(self, path: str, data: dict) -> dict:
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT, auth=self._auth) as client:
+            async with httpx.AsyncClient(timeout=TIMEOUT, auth=self._auth, verify=self._verify) as client:
                 r = await client.post(
                     f"{self._base_url}{path}",
                     headers=self._headers,

@@ -26,6 +26,17 @@ def load_config() -> dict:
     cfg.setdefault("MAX_RESULTS", 15)
     cfg.setdefault("RADARR_PORT", 7878)
     cfg.setdefault("RADARR_SSL", False)
+    cfg.setdefault("RADARR_VERIFY_SSL", True)
     cfg.setdefault("RADARR_URL_BASE", "")
+
+    # Telegram user IDs and ports are compared against ints elsewhere, so coerce
+    # them here. JSON lets users quote these by accident, which would silently
+    # lock the owner out of every admin command (str != int).
+    for key in ("OWNER_ID", "MAX_RESULTS", "RADARR_PORT"):
+        try:
+            cfg[key] = int(cfg[key])
+        except (TypeError, ValueError):
+            print(f"ERROR: config key {key} must be an integer, got: {cfg[key]!r}")
+            sys.exit(1)
 
     return cfg

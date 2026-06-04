@@ -4,6 +4,7 @@ import logging
 import sys
 
 from telegram import Update
+from telegram.error import TelegramError
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 import acl as acl_store
@@ -80,7 +81,19 @@ async def auth_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data.clear()
-    await update.message.reply_text("Cleared.")
+    await update.message.reply_text("Nothing in progress.")
+
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Catch anything a handler missed so the user gets feedback instead of silence."""
+    logging.getLogger(__name__).error("Unhandled exception", exc_info=context.error)
+    if isinstance(update, Update) and update.effective_message:
+        try:
+            await update.effective_message.reply_text(
+                "Something went wrong handling that. Please try again."
+            )
+        except TelegramError:
+            pass
 
 
 def main() -> None:
@@ -89,11 +102,18 @@ def main() -> None:
     app = Application.builder().token(config["TELEGRAM_BOT_TOKEN"]).build()
     app.bot_data["config"] = config
 
+    # Conversation handlers must be registered before the bare /clear command so
+    # that, while a conversation is active, the conversation's own /clear fallback
+    # wins and actually ends it. Otherwise the top-level /clear consumes the
+    # update, wipes user_data, and leaves the conversation stuck mid-flow.
+    app.add_handler(query_conversation())
+    app.add_handler(revoke_conversation())
+    app.add_handler(unrevoke_conversation())
+
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("auth", auth_command))
     app.add_handler(CommandHandler("clear", clear_command))
-    app.add_handler(query_conversation())
     app.add_handler(CommandHandler("library", library_command))
     app.add_handler(CommandHandler("upcoming", upcoming_command))
     app.add_handler(CommandHandler("rss", rss_command))
@@ -101,8 +121,8 @@ def main() -> None:
     app.add_handler(CommandHandler("refresh", refresh_command))
     app.add_handler(CommandHandler("cid", cid_command))
     app.add_handler(CommandHandler("users", users_command))
-    app.add_handler(revoke_conversation())
-    app.add_handler(unrevoke_conversation())
+
+    app.add_error_handler(error_handler)
 
     app.run_polling(drop_pending_updates=True)
 

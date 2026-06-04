@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -71,7 +71,7 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await update.message.reply_text("Usage: /upcoming [days]")
             return
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     end = now + timedelta(days=days)
 
     try:
@@ -88,11 +88,21 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text(f"No upcoming releases in the next {days} days.")
         return
 
+    # A wide window on a busy library can blow past Telegram's 4096-char message
+    # limit, which would make the whole send fail. Cap the list and note the rest.
+    total = len(movies)
+    max_results = config.get("MAX_RESULTS", 15)
+    displayed = movies[:max_results]
+
     lines = []
-    for m in movies:
+    for m in displayed:
         release = m.get("digitalRelease") or m.get("physicalRelease") or m.get("inCinemas") or "?"
         if len(release) > 10:
             release = release[:10]
         lines.append(f"➸ {m.get('title', '?')} — {release}")
 
-    await update.message.reply_text(f"Upcoming in the next {days} days:\n\n" + "\n".join(lines))
+    header = f"Upcoming in the next {days} days ({total})"
+    if total > max_results:
+        header += f", showing first {max_results}"
+
+    await update.message.reply_text(header + ":\n\n" + "\n".join(lines))

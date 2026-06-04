@@ -16,8 +16,14 @@ def _load() -> dict:
 
 
 def _save(acl: dict) -> None:
-    with open(ACL_PATH, "w") as f:
+    # Write to a temp file and atomically rename, so a crash or watchdog restart
+    # mid-write can't truncate acl.json (which would silently drop every user).
+    tmp = ACL_PATH + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(acl, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, ACL_PATH)
 
 
 def is_authorized(user_id: int) -> bool:
