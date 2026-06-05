@@ -100,12 +100,36 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Catch anything a handler missed so the user gets feedback instead of silence."""
-    logging.getLogger(__name__).error("Unhandled exception", exc_info=context.error)
+    logger = logging.getLogger(__name__)
+
+    # Build a rich context string so the Discord log tells us exactly what
+    # triggered the error without needing to correlate other log lines.
+    parts = []
+    if isinstance(update, Update):
+        if update.effective_user:
+            u = update.effective_user
+            parts.append(f"user={u.id} ({u.username or u.first_name})")
+        if update.effective_chat:
+            parts.append(f"chat={update.effective_chat.id}")
+        if update.effective_message and update.effective_message.text:
+            parts.append(f"text={update.effective_message.text[:80]!r}")
+
+    ctx = " | ".join(parts) if parts else "no update context"
+    logger.error("Unhandled exception [%s]", ctx, exc_info=context.error)
+
     if isinstance(update, Update) and update.effective_message:
+        config = context.application.bot_data.get("config", {})
+        is_owner = (
+            update.effective_user is not None
+            and update.effective_user.id in config.get("OWNER_IDS", [])
+        )
+        if is_owner:
+            err_type = type(context.error).__name__
+            reply = f"Error ({err_type}): {context.error}"
+        else:
+            reply = "Something went wrong. Please try again."
         try:
-            await update.effective_message.reply_text(
-                "Something went wrong handling that. Please try again."
-            )
+            await update.effective_message.reply_text(reply)
         except TelegramError:
             pass
 
